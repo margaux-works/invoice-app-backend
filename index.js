@@ -141,6 +141,22 @@ app.get('/invoices', (req, res) => {
     });
 });
 
+// allow user to find an invoice by ID
+app.get(
+  '/invoices/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    await Invoice.findOne({ id: req.params.id })
+      .then((invoice) => {
+        res.json(invoice);
+      })
+      .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+      });
+  }
+);
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
