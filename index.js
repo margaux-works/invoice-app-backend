@@ -4,6 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
+const { check, validationResult } = require('express-validator');
+
+const { User, Invoice } = require('./models/models.js');
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +25,12 @@ mongoose
 
 app.use(cors()); // allows requests from all origins
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+let auth = require('./auth.js')(app);
+const passport = require('passport');
+require('./passport.js');
+
 app.use(morgan('common'));
 
 // Placeholder route
@@ -29,70 +38,107 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-const { User, Invoice } = require('./models/models');
-
-app.get('/test-db', async (req, res) => {
-  try {
-    // Create a test user
-    const user = new User({
-      username: 'testuser',
-      email: 'testuser@example.com',
-      password: 'password123',
-    });
-    await user.save();
-
-    res.status(200).send({ message: 'Test data created', user });
-  } catch (err) {
-    res.status(500).send({ message: 'Error:', error: err.message });
+// allow a new user to register
+app.post(
+  '/users',
+  // Validation logic here for request
+  [
+    check('username', 'Username is required').isLength({ min: 5 }),
+    check(
+      'username',
+      'username contains non alphanumeric characters - not allowed.'
+    ).isAlphanumeric(),
+    check('password', 'Password is required').not().isEmpty(),
+    check('email', 'Email does not appear to be valid').isEmail(),
+  ],
+  async (req, res) => {
+    // validation logic
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    let hashedPassword = User.hashPassword(req.body.password);
+    await User.findOne({ Username: req.body.username })
+      .then((user) => {
+        if (user) {
+          return res.status(400).send(req.body.username + 'already exists');
+        } else {
+          User.create({
+            username: req.body.username,
+            password: hashedPassword,
+            email: req.body.email,
+          })
+            .then((user) => {
+              res.status(201).json(user);
+            })
+            .catch((error) => {
+              console.error(error);
+              res.status(500).send('Error: ' + error);
+            });
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send('Error: ' + error);
+      });
   }
-});
+);
 
-app.get('/test-invoice', async (req, res) => {
-  try {
-    // Create a sample invoice based on your schema
-    const invoice = new Invoice({
-      id: 'RT3080',
-      createdAt: '2021-08-18',
-      paymentDue: '2021-08-19',
-      description: 'Re-branding',
-      paymentTerms: 1,
-      clientName: 'John Lock',
-      clientEmail: 'johnlock@mail.com',
-      status: 'paid',
-      total: 1800.9,
-      senderAddress: {
-        street: 'Sonnenallee 23',
-        city: 'Berlin',
-        postCode: '12059',
-        country: 'Berlin',
-      },
-      clientAdress: {
-        street: '106 Kendell Street',
-        city: 'Sharrington',
-        postCode: 'NR24 5WQ',
-        country: 'United Kingdom',
-      },
-      items: [
-        {
-          name: 'Brand Guidelines',
-          quantity: 1,
-          price: 1800.9,
-          total: 1800.9,
-        },
-      ],
-    });
+// allow user to update their data
+app.put(
+  '/users/:username',
 
-    // Save the invoice to the database
-    await invoice.save();
+  [
+    check('username', 'Username must be at least 5 characters long')
+      .optional()
+      .isLength({ min: 5 }),
+    check(
+      'username',
+      'username contains non-alphanumeric characters - not allowed.'
+    )
+      .optional()
+      .isAlphanumeric(),
+    check('password', 'Password is required').optional().not().isEmpty(),
+    check('email', 'Email does not appear to be valid').optional().isEmail(),
+  ],
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    // Validation
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    const updateData = {};
+    if (req.body.username) updateData.username = req.body.username;
+    if (req.body.email) updateData.email = req.body.email;
+    if (req.body.password)
+      updateData.password = User.hashPassword(req.body.password);
 
-    // Respond with success and the created invoice
-    res.status(201).send({ message: 'Invoice created successfully', invoice });
-  } catch (err) {
-    // Handle errors
-    res
-      .status(500)
-      .send({ message: 'Error creating invoice', error: err.message });
+    await User.findOneAndUpdate(
+      { username: req.params.username },
+      { $set: updateData },
+      { new: true }
+    )
+      .then((updatedUser) => {
+        res.json(updatedUser);
+      })
+      .catch((err) => {
+        console.error(err);
+        res.status(500).send('Error: ' + err);
+      });
   }
+);
+
+// allow user to see the list of invoices
+app.get('/invoices', (req, res) => {
+  Invoice.find()
+    .then((invoices) => {
+      res.status(200).json(invoices);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send('Error: ' + err);
+    });
 });
 
 // Start the server
