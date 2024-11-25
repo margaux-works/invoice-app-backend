@@ -10,37 +10,126 @@ let userSchema = mongoose.Schema({
 let invoiceSchema = mongoose.Schema({
   id: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  paymentDue: { type: Date, required: true },
-  description: { type: String, required: true },
-  paymentTerms: { type: Number, required: true },
-  clientName: { type: String, required: true },
-  clientEmail: { type: String, required: true },
+  paymentDue: {
+    type: Date,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
+  description: {
+    type: String,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
+  paymentTerms: {
+    type: Number,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
+  clientName: {
+    type: String,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
+  clientEmail: {
+    type: String,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
   status: { type: String, required: true },
-  total: { type: Number, required: true },
+  total: {
+    type: Number,
+    required: function () {
+      return this.status === 'pending';
+    },
+  },
   senderAddress: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postCode: { type: String, required: true },
-    country: { type: String, required: true },
+    street: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    city: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    postCode: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    country: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
   },
   clientAdress: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postCode: { type: String, required: true },
-    country: { type: String, required: true },
+    street: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    city: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    postCode: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
+    country: {
+      type: String,
+      required: function () {
+        return this.status === 'pending';
+      },
+    },
   },
   items: [
     {
-      name: { type: String, required: true },
-      quantity: { type: Number, required: true },
-      price: { type: Number, required: true },
-      total: { type: Number, required: true },
+      name: {
+        type: String,
+        required: function () {
+          return this.status === 'pending';
+        },
+      },
+      quantity: {
+        type: Number,
+        required: function () {
+          return this.status === 'pending';
+        },
+      },
+      price: {
+        type: Number,
+        required: function () {
+          return this.status === 'pending';
+        },
+      },
+      total: {
+        type: Number,
+        required: function () {
+          return this.status === 'pending';
+        },
+      },
     },
   ],
 });
 
 // hashes a user's password using bcyript
-
 userSchema.statics.hashPassword = (password) => {
   return bcrypt.hashSync(password, 10);
 };

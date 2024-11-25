@@ -141,6 +141,19 @@ app.get('/invoices', (req, res) => {
     });
 });
 
+// filter invoice by status
+// app.get('/invoices', async (req, res) => {
+//   const { status } = req.query;
+//   const filter = status ? { status } : {};
+//   try {
+//     const invoices = await Invoice.find(filter);
+//     res.status(200).json(invoices);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Error: ' + err);
+//   }
+// });
+
 // allow user to find an invoice by ID
 app.get(
   '/invoices/:id',
@@ -154,6 +167,232 @@ app.get(
         console.error(err);
         res.status(500).send('Error: ' + err);
       });
+  }
+);
+
+// allow user to create a new invoice (save as draft or save and send)
+app.post(
+  '/invoices',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    const {
+      id,
+      createdAt,
+      paymentDue,
+      description,
+      paymentTerms,
+      clientName,
+      clientEmail,
+      status,
+      total,
+      senderAddress,
+      clientAdress,
+      items,
+    } = req.body;
+
+    // Validate status field
+    if (!['draft', 'pending'].includes(status)) {
+      return res
+        .status(400)
+        .send('Invalid status. Must be "draft" or "pending".');
+    }
+
+    // For pending invoices, validate all mandatory fields
+    if (status === 'pending') {
+      if (
+        !id ||
+        !paymentDue ||
+        !description ||
+        !paymentTerms ||
+        !clientName ||
+        !clientEmail ||
+        !total ||
+        !senderAddress?.street ||
+        !senderAddress?.city ||
+        !senderAddress?.postCode ||
+        !senderAddress?.country ||
+        !clientAdress?.street ||
+        !clientAdress?.city ||
+        !clientAdress?.postCode ||
+        !clientAdress?.country ||
+        !items?.length
+      ) {
+        return res
+          .status(400)
+          .send(
+            'All mandatory fields must be filled to save and send the invoice.'
+          );
+      }
+
+      // Validate items array for pending invoices
+      const itemsValid = items.every(
+        (item) =>
+          item.name && item.quantity > 0 && item.price > 0 && item.total >= 0
+      );
+      if (!itemsValid) {
+        return res
+          .status(400)
+          .send('Each item must have valid name, quantity, price, and total.');
+      }
+    }
+
+    // create a new invoice
+    const newInvoice = new Invoice({
+      id,
+      createdAt: createdAt || Date.now(),
+      paymentDue,
+      description,
+      paymentTerms,
+      clientName,
+      clientEmail,
+      status, // Either draft or pending
+      total,
+      senderAddress,
+      clientAdress,
+      items,
+    });
+
+    try {
+      const savedInvoice = await newInvoice.save();
+      res.status(201).json(savedInvoice);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error: ' + err);
+    }
+  }
+);
+
+// Update an invoice
+app.put(
+  '/invoices/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      // Extracting the status and other data from the request body
+      const { status, ...invoiceData } = req.body;
+
+      // Fetch the invoice to be updated
+      const invoice = await Invoice.findOne({ id: req.params.id });
+
+      if (!invoice) {
+        return res
+          .status(404)
+          .send(`Invoice with ID ${req.params.id} was not found.`);
+      }
+
+      // Validation logic based on status
+      if (status === 'pending') {
+        // Ensure all required fields are present
+        const requiredFields = [
+          'paymentDue',
+          'description',
+          'paymentTerms',
+          'clientName',
+          'clientEmail',
+          'total',
+          'senderAddress',
+          'clientAdress',
+          'items',
+        ];
+
+        for (const field of requiredFields) {
+          if (
+            !invoiceData[field] ||
+            (typeof invoiceData[field] === 'object' &&
+              Object.keys(invoiceData[field]).length === 0)
+          ) {
+            return res
+              .status(400)
+              .send(
+                `Field '${field}' is required to save the invoice as 'pending'.`
+              );
+          }
+        }
+
+        // Ensure that all nested fields in addresses and items are populated
+        if (
+          !invoiceData.senderAddress.street ||
+          !invoiceData.senderAddress.city ||
+          !invoiceData.senderAddress.postCode ||
+          !invoiceData.senderAddress.country ||
+          !invoiceData.clientAdress.street ||
+          !invoiceData.clientAdress.city ||
+          !invoiceData.clientAdress.postCode ||
+          !invoiceData.clientAdress.country ||
+          invoiceData.items.length === 0 ||
+          invoiceData.items.some(
+            (item) =>
+              !item.name ||
+              item.quantity == null ||
+              item.price == null ||
+              item.total == null
+          )
+        ) {
+          return res
+            .status(400)
+            .send(
+              `All fields in 'senderAddress', 'clientAdress', and 'items' must be filled to save as 'pending'.`
+            );
+        }
+      }
+
+      // Update the invoice
+      const updatedInvoice = await Invoice.findOneAndUpdate(
+        { id: req.params.id },
+        { ...invoiceData, status },
+        { new: true } // Return the updated document
+      );
+
+      res.status(200).json({
+        message: `Invoice with ID ${req.params.id} was updated successfully.`,
+        invoice: updatedInvoice,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error: ' + err.message);
+    }
+  }
+);
+
+// delete an existing invoice
+app.delete(
+  '/invoices/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      const deletedInvoice = await Invoice.findOneAndDelete({
+        id: req.params.id,
+      });
+      if (!deletedInvoice) {
+        return res
+          .status(404)
+          .send(`Invoice ${req.params.id}` + ' was not found');
+      }
+      res.status(200).send(`Invoice ${req.params.id}` + ' was deleted');
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error:' + err);
+    }
+  }
+);
+
+//delete a user
+app.delete(
+  '/users/:username',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      const deletedUser = await User.findOneAndDelete({
+        username: req.params.username,
+      });
+      if (!deletedUser) {
+        return res.status(404).send(`User ${req.params.username} not found.`);
+      }
+      res.status(200).send(`User ${req.params.username} deleted successfully.`);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error: ' + err);
+    }
   }
 );
 
