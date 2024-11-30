@@ -354,6 +354,38 @@ app.put(
   }
 );
 
+// Mark an invoice as paid
+app.patch(
+  '/invoices/:id/mark-as-paid',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      // Find the invoice by its ID
+      const invoice = await Invoice.findOne({ id: req.params.id });
+
+      // If the invoice doesn't exist, return a 404 error
+      if (!invoice) {
+        return res
+          .status(404)
+          .send(`Invoice with ID ${req.params.id} was not found.`);
+      }
+
+      // Update the status to 'paid'
+      invoice.status = 'paid';
+      const updatedInvoice = await invoice.save();
+
+      // Respond with the updated invoice
+      res.status(200).json({
+        message: `Invoice with ID ${req.params.id} has been marked as paid.`,
+        invoice: updatedInvoice,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error: ' + err.message);
+    }
+  }
+);
+
 // delete an existing invoice
 app.delete(
   '/invoices/:id',
