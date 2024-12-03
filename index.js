@@ -186,7 +186,7 @@ app.post(
       status,
       total,
       senderAddress,
-      clientAdress,
+      clientAddress,
       items,
     } = req.body;
 
@@ -211,10 +211,10 @@ app.post(
         !senderAddress?.city ||
         !senderAddress?.postCode ||
         !senderAddress?.country ||
-        !clientAdress?.street ||
-        !clientAdress?.city ||
-        !clientAdress?.postCode ||
-        !clientAdress?.country ||
+        !clientAddress?.street ||
+        !clientAddress?.city ||
+        !clientAddress?.postCode ||
+        !clientAddress?.country ||
         !items?.length
       ) {
         return res
@@ -248,7 +248,7 @@ app.post(
       status, // Either draft or pending
       total,
       senderAddress,
-      clientAdress,
+      clientAddress,
       items,
     });
 
@@ -291,7 +291,7 @@ app.put(
           'clientEmail',
           'total',
           'senderAddress',
-          'clientAdress',
+          'clientAddress',
           'items',
         ];
 
@@ -315,10 +315,10 @@ app.put(
           !invoiceData.senderAddress.city ||
           !invoiceData.senderAddress.postCode ||
           !invoiceData.senderAddress.country ||
-          !invoiceData.clientAdress.street ||
-          !invoiceData.clientAdress.city ||
-          !invoiceData.clientAdress.postCode ||
-          !invoiceData.clientAdress.country ||
+          !invoiceData.clientAddress.street ||
+          !invoiceData.clientAddress.city ||
+          !invoiceData.clientAddress.postCode ||
+          !invoiceData.clientAddress.country ||
           invoiceData.items.length === 0 ||
           invoiceData.items.some(
             (item) =>
@@ -331,7 +331,7 @@ app.put(
           return res
             .status(400)
             .send(
-              `All fields in 'senderAddress', 'clientAdress', and 'items' must be filled to save as 'pending'.`
+              `All fields in 'senderAddress', 'clientAddress', and 'items' must be filled to save as 'pending'.`
             );
         }
       }

@@ -73,7 +73,7 @@ let invoiceSchema = mongoose.Schema({
       },
     },
   },
-  clientAdress: {
+  clientAddress: {
     street: {
       type: String,
       required: function () {
