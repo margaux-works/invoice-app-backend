@@ -4,7 +4,7 @@ This is the backend for the **Invoice App**, a full-stack application that allow
 
 The corresponding front-end repositories are:
 
-- **[Invoice App Frontend](https://github.com/yourusername/invoice-app)** _(built with Angular and Tailwind CSS)_
+- **[Invoice App Frontend](https://github.com/margaux-works/myFlix-Angular)** _(built with Angular and Tailwind CSS)_
 
 ---
 
