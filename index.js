@@ -11,7 +11,7 @@ const { User, Invoice } = require('./models/models.js');
 // Load environment variables
 dotenv.config();
 
-const app = express(); //
+const app = express(); //  initialise Express app
 const PORT = process.env.PORT || 5001;
 
 // MongoDB connection
@@ -20,7 +20,7 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log('MongoDB connected successfully'))
+  .then(() => console.log('✅ MongoDB connected successfully'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 app.use(cors()); // allows requests from all origins
@@ -52,26 +52,32 @@ app.post(
     check('email', 'Email does not appear to be valid').isEmail(),
   ],
   async (req, res) => {
-    // validation logic
+    // check if validation errors exist
     let errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
+    // hash the user's password before saving to database
     let hashedPassword = User.hashPassword(req.body.password);
+    // check if the username already exists in the database
     await User.findOne({ Username: req.body.username })
       .then((user) => {
         if (user) {
+          // if user exist, returns error messge
           return res.status(400).send(req.body.username + 'already exists');
         } else {
+          // if user does not exist, create a new user record
           User.create({
             username: req.body.username,
             password: hashedPassword,
             email: req.body.email,
           })
             .then((user) => {
+              // Respond with the created user object
               res.status(201).json(user);
             })
             .catch((error) => {
+              // handle any errors during database operations
               console.error(error);
               res.status(500).send('Error: ' + error);
             });
@@ -140,19 +146,6 @@ app.get('/invoices', (req, res) => {
       res.status(500).send('Error: ' + err);
     });
 });
-
-// filter invoice by status
-// app.get('/invoices', async (req, res) => {
-//   const { status } = req.query;
-//   const filter = status ? { status } : {};
-//   try {
-//     const invoices = await Invoice.find(filter);
-//     res.status(200).json(invoices);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send('Error: ' + err);
-//   }
-// });
 
 // allow user to find an invoice by ID
 app.get(
