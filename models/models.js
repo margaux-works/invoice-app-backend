@@ -1,15 +1,17 @@
 const mongoose = require('mongoose'),
   bcrypt = require('bcrypt');
 
+// Define the schema for user accounts
 let userSchema = mongoose.Schema({
   username: { type: String, required: true },
   password: { type: String, required: true },
   email: { type: String, required: true },
 });
 
+// Define the schema for invoices with required file when status is 'pending' - save as sent.
 let invoiceSchema = mongoose.Schema({
-  id: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
+  id: { type: String, required: true }, // Unique identifier for the invoice
+  createdAt: { type: Date, default: Date.now }, // Timestamp when the invoice was created
   paymentDue: {
     type: Date,
     required: function () {
@@ -40,7 +42,7 @@ let invoiceSchema = mongoose.Schema({
       return this.status === 'pending';
     },
   },
-  status: { type: String, required: true },
+  status: { type: String, required: true }, // Invoice status (e.g., 'paid', 'pending', 'draft')
   total: {
     type: Number,
     required: function () {
