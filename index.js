@@ -1,17 +1,17 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const bodyParser = require('body-parser');
-const morgan = require('morgan');
-const { check, validationResult } = require('express-validator');
+const express = require('express'); // web framework for handling http requests
+const mongoose = require('mongoose'); // ODM for MongoDB
+const cors = require('cors'); // enables Cross-Origin Resource Sharing
+const dotenv = require('dotenv'); // loads environment variable from a .env file
+const bodyParser = require('body-parser'); // parses incoming request bodies
+const morgan = require('morgan'); // logs http requests into file for debugging
+const { check, validationResult } = require('express-validator'); // Validates user input (email format, required fields)
 
 const { User, Invoice } = require('./models/models.js');
 
 // Load environment variables
 dotenv.config();
 
-const app = express();
+const app = express(); //
 const PORT = process.env.PORT || 5001;
 
 // MongoDB connection
@@ -28,7 +28,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 let auth = require('./auth.js')(app);
-const passport = require('passport');
+const passport = require('passport'); // handles authentication (JWT & Local strategy).
 require('./passport.js');
 
 app.use(morgan('common'));
