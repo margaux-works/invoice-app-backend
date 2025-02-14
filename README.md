@@ -2,9 +2,9 @@
 
 This is the backend for the **Invoice App**, a full-stack application that allows users to create, update, delete, and manage invoices securely. Built with Node.js, Express, and MongoDB, this RESTful API serves as the server-side solution to store and process data.
 
-The corresponding front-end repositories are:
+The corresponding front-end repository is:
 
-- **[Invoice App Frontend](https://github.com/yourusername/invoice-app)** _(built with Angular and Tailwind CSS)_
+- **[Invoice App Frontend](https://github.com/margaux-works/myFlix-Angular)** _(built with Angular and Tailwind CSS)_
 
 ---
 
